@@ -1,32 +1,51 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 
-# --- 页面基础设置 (Page Config) ---
+# --- 1. 页面配置与高级样式 (Page Config & CSS) ---
 st.set_page_config(page_title="BrokeDate - Canada", page_icon="💀", layout="centered")
 
-# --- 样式美化 (CSS) ---
 st.markdown("""
     <style>
-    .stProgress > div > div > div > div { background-color: #ef4444; }
+    /* 隐藏 Streamlit 默认页眉 */
+    [data-testid="stHeader"] {display: none;}
+    .block-container {padding-top: 5rem;}
+
+    /* 顶部吸顶看板：毛玻璃效果 */
     .survival-header {
-        position: fixed; top: 50px; left: 0; right: 0; background: white;
-        padding: 15px; border-bottom: 2px solid #f0f2f6; z-index: 1000;
-        text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        position: fixed; top: 0; left: 0; right: 0;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 10px 0;
+        border-bottom: 1px solid #eaeaea;
+        z-index: 999;
+        text-align: center;
     }
-    .main-title { font-size: 2.5rem; font-weight: 800; color: #1e293b; margin-bottom: 0; }
-    .slogan { font-size: 1.1rem; color: #64748b; margin-bottom: 2rem; }
+    .conclusion-text { font-size: 1.4rem; font-weight: 800; margin: 0; }
+    .sub-text { font-size: 0.8rem; color: #666; margin: 0; }
+
+    /* 进度条位置微调 */
+    .stProgress { position: fixed; top: 62px; left: 0; right: 0; z-index: 1000; height: 4px; }
+    
+    /* 按钮美化 */
+    .stButton>button {
+        width: 100%; border-radius: 8px; height: 3.5rem;
+        background-color: #000; color: white; border: none; font-size: 1.1rem;
+    }
+    
+    /* 输入框间距优化 */
+    .stNumberInput { margin-bottom: 1.5rem; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 核心算法 (Core Algorithms) ---
+# --- 2. 核心算法 (Core Algorithms) ---
 
 def calc_cdn_monthly_rate(annual_rate):
-    """加拿大半年复利转月利率"""
+    """加拿大半年复利转月利率逻辑"""
     return (1 + annual_rate / 2)**(2/12) - 1
 
 def calculate_survival(data):
-    # 基础参数解包
+    # 参数解包
     cash = data['cash'] + data['gic']
     income = data['income']
     age = data['age']
@@ -38,47 +57,38 @@ def calculate_survival(data):
     prepay_amt = data['prepay_amt']
     prepay_month_idx = data['prepay_month_idx']
     
-    # 房贷初始化
     principal = house_price - down_payment
     monthly_rate = calc_cdn_monthly_rate(annual_rate)
     total_months = amort_years * 12
     
-    # 计算月供 (P&I)
     def get_payment(p, r, n):
         if p <= 0 or r <= 0: return 0
         return p * (r * (1 + r)**n) / ((1 + r)**n - 1)
 
     monthly_payment = get_payment(principal, monthly_rate, total_months)
     
-    # 推演
     history = []
-    current_date = datetime.today()
-    max_months = (82 - age) * 12 if age < 82 else 120
     bankrupt_age = None
+    avg_life = 82 # 加拿大平均寿命基准
     
-    for m in range(1, 1201): # 最多推演100年
-        # 收入增长 (3%) 与天花板逻辑
+    # 模拟 1200 个月 (100年)
+    for m in range(1, 1201):
         if m % 12 == 0:
+            # 收入增长 3%，封顶中位数+25%，并随通胀移动
             income = min(income * 1.03, 6200 * (1.021 ** (m//12))) 
-            monthly_expense *= 1.021 # 支出通胀
+            monthly_expense *= 1.021 # 支出通胀 2.1%
         
-        # 房贷逻辑
         if principal > 0:
             interest_step = principal * monthly_rate
             principal_step = monthly_payment - interest_step
             principal -= principal_step
-            # 提前还贷
-            if m == prepay_month_idx:
-                principal -= prepay_amt
-            # 5年重算 (第61个月)
-            if m == 61:
+            if m == prepay_month_idx: principal -= prepay_amt
+            if m == 61: # 5年续约重算
                 monthly_payment = get_payment(principal, monthly_rate, total_months - 60)
         
-        # 现金流结算
         cash = cash + income - monthly_payment - monthly_expense
-        
         current_age = age + (m/12)
-        history.append({"Month": m, "Cash": cash, "Age": current_age})
+        history.append({"Age": current_age, "Cash": cash})
         
         if cash <= 0 and bankrupt_age is None:
             bankrupt_age = current_age
@@ -86,32 +96,31 @@ def calculate_survival(data):
             
     return bankrupt_age, history
 
-# --- 侧边栏/状态栏渲染 (Status Bar) ---
+# --- 3. 状态栏渲染函数 (Status Bar Renderer) ---
 def render_status_bar(bankrupt_age, current_age):
     avg_life = 82
     if bankrupt_age:
-        color = "#ef4444" if bankrupt_age < 60 else "#f59e0b"
+        color = "#e63946" if bankrupt_age < 60 else "#f4a261"
         status_text = f"💀 预计将在 {bankrupt_age:.1f} 岁耗尽现金"
+        # 进度条计算：当前到破产占当前到平均寿命的比例
         progress = (bankrupt_age - current_age) / (avg_life - current_age)
         progress = max(0.0, min(1.0, progress))
     else:
-        color = "#10b981"
-        status_text = "✅ 恭喜！您将平安度过一生 (覆盖至 82 岁)"
+        color = "#2a9d8f"
+        status_text = "✅ 恭喜！您将平安度过一生"
         progress = 1.0
 
     st.markdown(f"""
         <div class="survival-header">
-            <h3 style='color:{color}; margin:0;'>{status_text}</h3>
-            <p style='margin:0; font-size:0.8rem;'>加拿大平均寿命基准线: 82 岁</p>
+            <p class="conclusion-text" style="color:{color};">{status_text}</p>
+            <p class="sub-text">加拿大平均寿命基准: {avg_life} 岁</p>
         </div>
-        <br><br><br>
     """, unsafe_allow_html=True)
     st.progress(progress)
 
-# --- 页面逻辑 (Main UI) ---
+# --- 4. 页面流程 (App Flow) ---
 
-if 'step' not in st.session_state:
-    st.session_state.step = 1
+if 'step' not in st.session_state: st.session_state.step = 1
 if 'data' not in st.session_state:
     st.session_state.data = {
         'age': 30, 'cash': 30000, 'gic': 10000, 'income': 2500,
@@ -119,41 +128,39 @@ if 'data' not in st.session_state:
         'living_cost': 1800, 'house_tax': 400, 'prepay_amt': 0, 'prepay_month_idx': 0
     }
 
-# Page 1: 欢迎页
+# Page 1: 欢迎
 if st.session_state.step == 1:
-    st.markdown("<h1 class='main-title'>BrokeDate</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='slogan'>Don't just calculate your mortgage, calculate your survival.</p>", unsafe_allow_html=True)
-    st.info("打破买房幻觉，通过揭示“破产日期”来建立真实的安全感。")
-    
-    age_input = st.number_input("您的当前年龄 (Your Current Age)", value=30, step=1)
-    if age_input >= 80:
+    st.title("🏠 BrokeDate")
+    st.markdown("#### Don't just calculate your mortgage, calculate your survival.")
+    st.write("---")
+    st.write("打破买房幻觉，通过揭示“破产日期”来建立真实的安全感。")
+    age_in = st.number_input("您的当前年龄 (Your Current Age)", value=30, step=1)
+    if age_in >= 80:
         st.warning("爷爷/奶奶您好，我觉得您这个年纪，真的没必要算这个了，回家安心享清福吧。")
-    
-    if st.button("开启生存测算 (Start Simulation)"):
-        st.session_state.data['age'] = age_input
+    if st.button("开启生存测算"):
+        st.session_state.data['age'] = age_in
         st.session_state.step = 2
         st.rerun()
 
-# Page 2: 财富底气
+# Page 2: 资产
 elif st.session_state.step == 2:
-    st.header("💰 第一步：财富底气 (My Assets)")
+    st.subheader("💰 第一步：财富底气")
     st.session_state.data['cash'] = st.number_input("现有活钱 (Liquid Cash) (?)", value=30000, help="参考加统计局中位数。高于此数说明你的储备优于平均线。")
-    st.session_state.data['gic'] = st.number_input("未来回笼 (Future Cash) (?)", value=10000, help="指目前锁定无法取出，但未来确定的入账（如定期存款 GIC）。")
-    st.session_state.data['income'] = st.number_input("月纯收入-税后 (Net Income) (?)", value=2500, help="按最低工资标准设定，若你更高则起点更稳。")
+    st.session_state.data['gic'] = st.number_input("未来回笼 (Future Cash) (?)", value=10000, help="指目前锁定无法取出，但未来确定的入账。")
+    st.session_state.data['income'] = st.number_input("月纯收入-税后 (Net Income) (?)", value=2500, help="按加国最低工资标准设定。")
     
     if st.button("下一步：压力接入"):
         st.session_state.step = 3
         st.rerun()
 
-# Page 3: 债务契约
+# Page 3: 房贷
 elif st.session_state.step == 3:
-    st.header("📉 第二步：债务契约 (My Debt)")
-    hp = st.number_input("房屋总价 (House Price) (?)", value=480000, help="全加平均房价减去 30%，代表高性价比入门房。")
+    st.subheader("📉 第二步：债务契约")
+    hp = st.number_input("房屋总价 (House Price) (?)", value=480000, help="平均房价减去 30%，入门级住房。")
     st.session_state.data['house_price'] = hp
-    st.session_state.data['down_payment'] = st.number_input("首付金额 (Down Payment)", value=int(hp*0.2))
-    st.session_state.data['rate'] = st.number_input("房贷利率 (Rate %) (?)", value=4.5, format="%.2f", help="加拿大五年期固定利率平均水平。")
+    st.session_state.data['down_payment'] = st.number_input("首付金额", value=int(hp*0.2))
+    st.session_state.data['rate'] = st.number_input("房贷利率 % (?)", value=4.5, format="%.2f", help="加拿大五年期固定利率。")
     
-    # 实时渲染状态栏
     b_age, _ = calculate_survival(st.session_state.data)
     render_status_bar(b_age, st.session_state.data['age'])
     
@@ -161,11 +168,11 @@ elif st.session_state.step == 3:
         st.session_state.step = 4
         st.rerun()
 
-# Page 4: 生活基准
+# Page 4: 支出
 elif st.session_state.step == 4:
-    st.header("🏠 第三步：生活基准 (Daily Living)")
-    st.session_state.data['living_cost'] = st.number_input("月生活支出/租金 (Living/Rent) (?)", value=1800, help="参照全加一居室平均租金。用于评估生存成本。")
-    st.session_state.data['house_tax'] = st.number_input("房产持有杂费 (Tax/Ins)", value=400)
+    st.subheader("🏠 第三步：生活基准")
+    st.session_state.data['living_cost'] = st.number_input("月生活支出/租金 (?)", value=1800, help="参照平均一居室租金。")
+    st.session_state.data['house_tax'] = st.number_input("房产持有杂费", value=400)
     
     b_age, _ = calculate_survival(st.session_state.data)
     render_status_bar(b_age, st.session_state.data['age'])
@@ -174,24 +181,22 @@ elif st.session_state.step == 4:
         st.session_state.step = 5
         st.rerun()
 
-# Page 5: 终极报告
+# Page 5: 报告
 elif st.session_state.step == 5:
-    st.header("📊 终极生存报告 (Survival Report)")
+    st.subheader("📊 终极生存报告")
     
-    # 突发事件与博弈区
-    with st.expander("🛠️ 决策干预与突发挑战 (Strategy & Crisis)"):
-        st.session_state.data['prepay_amt'] = st.number_input("提前还贷金额", value=0, step=5000)
-        st.session_state.data['prepay_month_idx'] = st.slider("还贷时间点 (第几个月)", 1, 60, 12)
-        
     b_age, history = calculate_survival(st.session_state.data)
     render_status_bar(b_age, st.session_state.data['age'])
     
-    # 图表绘制
     df = pd.DataFrame(history)
     st.line_chart(df.set_index('Age')['Cash'])
     
-    st.write("“算出哪天破产，是为了不让那一天真的到来。”")
+    st.markdown("""---""")
+    with st.expander("🛠️ 决策干预 (假如我提前还贷...)"):
+        st.session_state.data['prepay_amt'] = st.number_input("提前还贷金额 ($)", value=0, step=5000)
+        st.session_state.data['prepay_month_idx'] = st.slider("还贷时间点 (第几个月)", 1, 60, 12)
     
-    if st.button("重新测算"):
+    st.write("> “算出哪天破产，是为了不让那一天真的到来。”")
+    if st.button("重新开始测算"):
         st.session_state.step = 1
         st.rerun()
