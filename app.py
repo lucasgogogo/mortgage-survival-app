@@ -336,7 +336,7 @@ if st.session_state.step == 1:
     </div>
     """, unsafe_allow_html=True)
 
-    st.info("核心精神：打破买房幻觉，通过揭示"破产日期"来建立真实的安全感。")
+    st.info('核心精神：打破买房幻觉，通过揭示"破产日期"来建立真实的安全感。')
 
     age_in = st.number_input("您的当前年龄 (Your Current Age)", value=st.session_state.data['age'], step=1)
 
