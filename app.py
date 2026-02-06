@@ -434,7 +434,7 @@ elif st.session_state.step == 5:
 
             render_survival_chart(history_new, b_age_new, b_month_new)
 
-    st.write("> "算出哪天破产，是为了不让那一天真的到来。"")
+    st.write('> "算出哪天破产，是为了不让那一天真的到来。"')
 
     if st.button("🎲 试试你的抗压极限 (Random Challenge)"):
         st.session_state.step = 6
