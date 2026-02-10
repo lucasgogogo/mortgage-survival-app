@@ -19,14 +19,14 @@ cash_now = st.sidebar.number_input("可用存款 ($)", value=0)
 gic_amount = st.sidebar.number_input("未来收入/如定期取回 ($)", value=0)
 
 st.sidebar.header("3. 每月收支")
-start_date_input = st.sidebar.date_input("模拟开始日期", datetime.today())
+start_date_input = st.sidebar.date_input("模拟开始日期/默认本月", datetime.today())
 # 自动锁定为该月1号
 start_date = datetime(start_date_input.year, start_date_input.month, 1)
 
 monthly_income = st.sidebar.number_input("当前月纯收入 ($)", value=0)
 income_growth_rate = st.sidebar.number_input("预计年收入增长率 (%)", value=0.0, step=0.5)
 monthly_expense = st.sidebar.number_input("月生活支出 ($)", value=0)
-house_expense = st.sidebar.number_input("房产持有杂费 ($)", value=0)
+house_expense = st.sidebar.number_input("房产持有杂费/房产税+保险 per MO ($)", value=0)
 
 st.sidebar.header("4. 提前还贷决策")
 prepay_amount = st.sidebar.number_input("提前还贷金额 ($)", value=0, step=5000)
