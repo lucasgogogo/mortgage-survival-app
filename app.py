@@ -7,7 +7,7 @@ st.set_page_config(page_title="BrokeDate V1.8.0", page_icon="🏠")
 
 st.title("🏠 房贷生存全周期测试模型 (V1.8)")
 st.markdown("**别只算月供，算算你能活多久**")
-st.caption("核心精神：打破买房幻觉，通过揭示"破产日期"来建立真实的安全感。")
+st.caption('核心精神：打破买房幻觉，通过揭示"破产日期"来建立真实的安全感。')
 
 # --- 🔒 隐私保证文案 ---
 st.markdown("""
@@ -216,4 +216,4 @@ if house_price > 0:
 else:
     # --- 欢迎页面 ---
     st.info("👋 欢迎使用 BrokeDate V1.8！*别只算月供，算算你能活多久* 请在左侧侧边栏输入您的房贷、资产及收支数据，系统将为您生成全周期的生存推演图表。")
-    st.image("https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80", caption="打破买房幻觉，通过揭示"破产日期"来建立真实的安全感")
+    st.image("https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80", caption='打破买房幻觉，通过揭示"破产日期"来建立真实的安全感')
