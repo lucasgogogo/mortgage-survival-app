@@ -36,17 +36,17 @@ down_payment = st.sidebar.number_input("首付金额 ($)", value=0, step=5000)
 rate_annual = st.sidebar.number_input("年利率 (%)", value=0.00, step=0.1, format="%.2f")
 amortization_years = st.sidebar.selectbox("贷款总年限", [25, 30], index=0)
 
-# --- ✨ 侧边栏实时计算并显示月供 ---
-if house_price > 0:
-    sidebar_loan = max(0, house_price - down_payment)
-    sidebar_payment = calc_cdn_mortgage(sidebar_loan, rate_annual, amortization_years)
-    st.sidebar.markdown(f"""
-    <div style="background-color: #f0f2f6; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #e63946;">
-        <small style="color: #666;">📉 贷款本金: ${sidebar_loan:,}</small><br>
-        <span style="font-size: 16px; font-weight: bold;">👉 月供: </span>
-        <span style="font-size: 20px; font-weight: 900; color: #e63946;">${sidebar_payment:,}</span>
-    </div>
-    """, unsafe_allow_html=True)
+# --- ✨ 侧边栏实时计算并显示月供 (始终显示) ---
+sidebar_loan = max(0, house_price - down_payment)
+sidebar_payment = calc_cdn_mortgage(sidebar_loan, rate_annual, amortization_years)
+
+st.sidebar.markdown(f"""
+<div style="background-color: #f0f2f6; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #e63946;">
+    <small style="color: #666;">📉 贷款本金: ${sidebar_loan:,}</small><br>
+    <span style="font-size: 16px; font-weight: bold;">👉 月供: </span>
+    <span style="font-size: 20px; font-weight: 900; color: #e63946;">${sidebar_payment:,}</span>
+</div>
+""", unsafe_allow_html=True)
 # ----------------------------------------
 
 st.sidebar.header("2. 你的家底")
@@ -195,5 +195,5 @@ if house_price > 0:
 
 else:
     # --- 欢迎页面 ---
-    st.info("👋 欢迎使用 BrokeDate V1.7！*别只算月供，算算你能活多久*请在左侧侧边栏输入您的房贷、资产及收支数据，系统将为您生成全周期的生存推演图表。")
+    st.info("👋 欢迎使用 BrokeDate V1.7！*别只算月供，算算你能活多久* 请在左侧侧边栏输入您的房贷、资产及收支数据，系统将为您生成全周期的生存推演图表。")
     st.image("https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80", caption="打破买房幻觉，通过揭示“破产日期”来建立真实的安全感")
