@@ -275,27 +275,27 @@ if house_price > 0:
     df_sub = df.melt(id_vars=["Date"], value_vars=["Income", "Expense"],
                      var_name="指标", value_name="金额")
 
-    # 主线：Cash / Loan / ZeroLine — 实线，粗
+    # 主线：Cash / Loan / ZeroLine — 实线，粗，左侧 Y 轴
     main_chart = alt.Chart(df_main).mark_line(strokeWidth=3).encode(
         x=alt.X("Date:T", title="日期"),
-        y=alt.Y("金额:Q", title="金额 ($)"),
+        y=alt.Y("金额:Q", title="资产 / 贷款 ($)"),
         color=alt.Color("指标:N",
                          scale=alt.Scale(domain=["Cash", "Loan", "ZeroLine"],
                                          range=["#29b5e8", "#ff4b4b", "#000000"]),
                          legend=alt.Legend(title="指标")),
     )
 
-    # 副线：Income / Expense — 虚线，细
+    # 副线：Income / Expense — 虚线，细，右侧独立 Y 轴
     sub_chart = alt.Chart(df_sub).mark_line(strokeWidth=1.5, strokeDash=[6, 4]).encode(
         x=alt.X("Date:T"),
-        y=alt.Y("金额:Q"),
+        y=alt.Y("金额:Q", title="月收支 ($)", axis=alt.Axis(orient="right")),
         color=alt.Color("指标:N",
                          scale=alt.Scale(domain=["Income", "Expense"],
                                          range=["#22c55e", "#ef4444"]),
-                         legend=alt.Legend(title="收支")),
+                         legend=alt.Legend(title="月收支")),
     )
 
-    chart = (main_chart + sub_chart).properties(height=420).resolve_scale(color="independent")
+    chart = (main_chart + sub_chart).properties(height=420).resolve_scale(y="independent", color="independent")
     st.altair_chart(chart, use_container_width=True)
 
     st.caption(f"注：模型已自动计入每年 {inflation_rate*100}% 的生活成本通胀。月收入增长上限初始设为 ${initial_income_cap} (基于曼省平均月收入之 150%)，且该封顶值亦随通胀率逐年同步递增。")
