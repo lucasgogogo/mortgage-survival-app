@@ -9,6 +9,19 @@ st.title("🏠 房贷生存全周期测试模型 (V1.8)")
 st.markdown("**别只算月供，算算你能活多久**")
 st.caption('核心精神：打破买房幻觉，通过揭示"破产日期"来建立真实的安全感。')
 
+# --- 隐藏 number_input 的加减按钮 ---
+st.markdown("""
+<style>
+    button.step-up, button.step-down,
+    [data-testid="stNumberInput"] button {
+        display: none !important;
+    }
+    [data-testid="stNumberInput"] div[data-baseweb="input"] {
+        border-radius: 4px !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # --- 🔒 隐私保证文案 ---
 st.markdown("""
     <div style="background-color: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 8px; color: #064e3b; margin: 20px 0;">
@@ -40,13 +53,38 @@ def get_duration_str(start, end):
     diff = end.year * 12 + end.month - (start.year * 12 + start.month)
     return f"{diff // 12} 年 {diff % 12} 个月"
 
+# --- 联动输入组件：number_input + slider 共享同一个 key ---
+def synced_input_int(label, key, min_val, max_val, step, help_text=None):
+    """整数型：number_input 在上，slider 在下，共享 session_state key 实现联动"""
+    if key not in st.session_state:
+        st.session_state[key] = min_val
+    st.sidebar.number_input(label, min_value=min_val, max_value=max_val, step=step,
+                            key=f"{key}_num", value=st.session_state[key], help=help_text,
+                            on_change=lambda: st.session_state.update({key: st.session_state[f"{key}_num"]}))
+    st.sidebar.slider(label, min_value=min_val, max_value=max_val, step=step,
+                      key=f"{key}_sld", value=st.session_state[key], label_visibility="collapsed",
+                      on_change=lambda: st.session_state.update({key: st.session_state[f"{key}_sld"]}))
+    return st.session_state[key]
+
+def synced_input_float(label, key, min_val, max_val, step, fmt="%.2f", help_text=None):
+    """浮点型：number_input 在上，slider 在下，共享 session_state key 实现联动"""
+    if key not in st.session_state:
+        st.session_state[key] = min_val
+    st.sidebar.number_input(label, min_value=min_val, max_value=max_val, step=step, format=fmt,
+                            key=f"{key}_num", value=st.session_state[key], help=help_text,
+                            on_change=lambda: st.session_state.update({key: st.session_state[f"{key}_num"]}))
+    st.sidebar.slider(label, min_value=min_val, max_value=max_val, step=step,
+                      key=f"{key}_sld", value=st.session_state[key], label_visibility="collapsed",
+                      on_change=lambda: st.session_state.update({key: st.session_state[f"{key}_sld"]}))
+    return st.session_state[key]
+
 # --- 侧边栏：输入参数 ---
 st.sidebar.header("1. 房子与贷款")
 
-house_price = st.sidebar.slider("房屋总价 ($)", min_value=0, max_value=2000000, value=0, step=5000)
-down_payment = st.sidebar.slider("首付金额 ($)", min_value=0, max_value=1000000, value=0, step=5000)
-rate_annual = st.sidebar.slider("年利率 (%)", min_value=0.0, max_value=10.0, value=0.0, step=0.05,
-                                 help="建议填入4%的近年平均利率")
+house_price = synced_input_int("房屋总价 ($)", "house_price", 0, 2000000, 5000)
+down_payment = synced_input_int("首付金额 ($)", "down_payment", 0, 1000000, 5000)
+rate_annual = synced_input_float("年利率 (%)", "rate_annual", 0.0, 10.0, 0.05,
+                                  help_text="建议填入4%的近年平均利率")
 amortization_years = st.sidebar.selectbox("贷款总年限", [25, 30], index=0)
 
 # --- ✨ 侧边栏实时计算并显示月供 ---
@@ -63,26 +101,26 @@ st.sidebar.markdown(f"""
 
 st.sidebar.header("2. 你的家底")
 
-cash_now = st.sidebar.slider("现有存款 ($)", min_value=0, max_value=1000000, value=0, step=1000,
-                              help="所有你现在能动用的流动资金，包括储蓄，可变现的股票等")
-gic_amount = st.sidebar.slider("未来大笔收入 ($)", min_value=0, max_value=500000, value=0, step=1000,
-                                help="如定存到期，默认1年后转换成现有存款计入流动资金")
+cash_now = synced_input_int("现有存款 ($)", "cash_now", 0, 1000000, 1000,
+                             help_text="所有你现在能动用的流动资金，包括储蓄，可变现的股票等")
+gic_amount = synced_input_int("未来大笔收入 ($)", "gic_amount", 0, 500000, 1000,
+                               help_text="如定存到期，默认1年后转换成现有存款计入流动资金")
 
 st.sidebar.header("3. 每月收支")
 
 # 模拟开始日期：直接默认今天，不再显示输入
 start_date = datetime(datetime.today().year, datetime.today().month, 1)
 
-monthly_income = st.sidebar.slider("当前家庭月纯收入 ($)", min_value=0, max_value=20000, value=0, step=100,
-                                    help="扣去所有税费，养老等每个月纯到账的收入")
-income_growth_rate = st.sidebar.slider("预计年收入增长率 (%)", min_value=0.0, max_value=15.0, value=0.0, step=0.5,
-                                        help="建议3-5%的全国平均值，模型会在收入超过5700元（曼省家庭中位线）后停止增长")
-monthly_expense = st.sidebar.slider("月生活支出 ($)", min_value=0, max_value=15000, value=0, step=100,
-                                     help="除了房税和房屋保险外的一切支出")
-house_expense = st.sidebar.slider("房税+房保险 /月 ($)", min_value=0, max_value=3000, value=0, step=50)
+monthly_income = synced_input_int("当前家庭月纯收入 ($)", "monthly_income", 0, 20000, 100,
+                                   help_text="扣去所有税费，养老等每个月纯到账的收入")
+income_growth_rate = synced_input_float("预计年收入增长率 (%)", "income_growth", 0.0, 15.0, 0.5, "%.1f",
+                                         help_text="建议3-5%的全国平均值，模型会在收入超过5700元（曼省家庭中位线）后停止增长")
+monthly_expense = synced_input_int("月生活支出 ($)", "monthly_expense", 0, 15000, 100,
+                                    help_text="除了房税和房屋保险外的一切支出")
+house_expense = synced_input_int("房税+房保险 /月 ($)", "house_expense", 0, 3000, 50)
 
 st.sidebar.header("4. 提前还贷决策")
-prepay_amount = st.sidebar.slider("提前还贷金额 ($)", min_value=0, max_value=500000, value=0, step=5000)
+prepay_amount = synced_input_int("提前还贷金额 ($)", "prepay_amount", 0, 500000, 5000)
 
 col_y, col_m = st.sidebar.columns(2)
 with col_y:
@@ -91,7 +129,7 @@ with col_m:
     prepay_month = st.selectbox("还贷月份", range(1, 13), index=start_date.month - 1)
 
 prepay_date = datetime(prepay_year, prepay_month, 1)
-penalty = st.sidebar.slider("提前还贷罚金 ($)", min_value=0, max_value=50000, value=0, step=500)
+penalty = synced_input_int("提前还贷罚金 ($)", "penalty", 0, 50000, 500)
 
 
 # --- 逻辑开关：只有输入了房价才开始推演 ---
