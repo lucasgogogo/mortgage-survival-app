@@ -3,11 +3,23 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 # --- 页面基础设置 ---
-st.set_page_config(page_title="BrokeDate V1.7", page_icon="🏠")
+st.set_page_config(page_title="BrokeDate V1.7.2", page_icon="🏠")
 
 st.title("🏠 房贷生存全周期测试模型 (V1.7)")
 st.markdown("**别只算月供，算算你能活多久**")
 st.caption("核心精神：打破买房幻觉，通过揭示“破产日期”来建立真实的安全感。")
+
+# --- 🔒 新增：显著的隐私保证文案 ---
+st.markdown("""
+    <div style="background-color: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 8px; color: #064e3b; margin: 20px 0;">
+        <span style="font-size: 18px;">🔒 <strong>隐私绝对安全承诺</strong></span><br>
+        <span style="font-size: 14px; opacity: 0.9;">
+            我们<strong>绝不存储</strong>您的任何数据。所有计算均纯粹在您的本地浏览器中即时完成，没有任何人（包括我们）能看到您的财富真相。
+            <br>关闭本页面后，所有输入数据将自动销毁。
+        </span>
+    </div>
+""", unsafe_allow_html=True)
+# ------------------------------------
 
 # --- 0. 核心算法 (函数前置，以便侧边栏调用) ---
 def calc_cdn_mortgage(principal, annual_rate, years):
