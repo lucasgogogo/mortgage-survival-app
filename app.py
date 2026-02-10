@@ -2,28 +2,27 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 
-# --- 页面基础设置 ---
-st.set_page_config(page_title="BrokeDate V1.7.2", page_icon="🏠")
+# --- Page Configuration ---
+st.set_page_config(page_title="BrokeDate V2", page_icon="🏠")
 
-st.title("🏠 房贷生存全周期测试模型 (V1.7)")
-st.markdown("**别只算月供，算算你能活多久**")
-st.caption("核心精神：打破买房幻觉，通过揭示“破产日期”来建立真实的安全感。")
+st.title("🏠 BrokeDate V2: Mortgage Survival Simulator")
+st.markdown("**Don't just calculate your mortgage, calculate your survival.**")
+st.caption("Core Spirit: Break the illusion of home ownership. Reveal your 'Bankruptcy Date' to build true security.")
 
-# --- 🔒 新增：显著的隐私保证文案 ---
+# --- 🔒 Privacy Shield (English) ---
 st.markdown("""
     <div style="background-color: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 8px; color: #064e3b; margin: 20px 0;">
-        <span style="font-size: 18px;">🔒 <strong>隐私绝对安全承诺</strong></span><br>
+        <span style="font-size: 18px;">🔒 <strong>Privacy Guarantee</strong></span><br>
         <span style="font-size: 14px; opacity: 0.9;">
-            我们<strong>绝不存储</strong>您的任何数据。所有计算均纯粹在您的本地浏览器中即时完成，没有任何人（包括我们）能看到您的财富真相。
-            <br>关闭本页面后，所有输入数据将自动销毁。
+            We <strong>do not store</strong> any of your data. All calculations are performed locally in your browser. No one (including us) can see your financial truth.
+            <br>All input data is destroyed immediately upon closing this page.
         </span>
     </div>
 """, unsafe_allow_html=True)
-# ------------------------------------
 
-# --- 0. 核心算法 (函数前置，以便侧边栏调用) ---
+# --- 0. Core Algorithms (Helper Functions) ---
 def calc_cdn_mortgage(principal, annual_rate, years):
-    """计算加拿大半年复利月供"""
+    """Canadian Mortgage Calc (Semi-annual compounding)"""
     if principal <= 0 or years <= 0 or annual_rate <= 0: return 0
     semi_annual_rate = annual_rate / 100 / 2
     monthly_rate = (1 + semi_annual_rate) ** (2 / 12) - 1
@@ -39,59 +38,59 @@ def add_months(sourcedate, months):
 
 def get_duration_str(start, end):
     diff = end.year * 12 + end.month - (start.year * 12 + start.month)
-    return f"{diff // 12} 年 {diff % 12} 个月"
+    return f"{diff // 12} Years {diff % 12} Months"
 
-# --- 侧边栏：输入参数 ---
-st.sidebar.header("1. 房子与贷款")
-house_price = st.sidebar.number_input("房屋总价 ($)", value=0, step=5000)
-down_payment = st.sidebar.number_input("首付金额 ($)", value=0, step=5000)
-rate_annual = st.sidebar.number_input("年利率 (%)", value=0.00, step=0.1, format="%.2f")
-amortization_years = st.sidebar.selectbox("贷款总年限", [25, 30], index=0)
+# --- Sidebar: Inputs ---
+st.sidebar.header("1. Property & Loan")
+house_price = st.sidebar.number_input("House Price ($)", value=0, step=5000)
+down_payment = st.sidebar.number_input("Down Payment ($)", value=0, step=5000)
+rate_annual = st.sidebar.number_input("Annual Interest Rate (%)", value=0.00, step=0.1, format="%.2f")
+amortization_years = st.sidebar.selectbox("Amortization Period (Years)", [25, 30], index=0)
 
-# --- ✨ 侧边栏实时计算并显示月供 (始终显示) ---
+# --- ✨ Real-time Sidebar Calc (Always Visible) ---
 sidebar_loan = max(0, house_price - down_payment)
 sidebar_payment = calc_cdn_mortgage(sidebar_loan, rate_annual, amortization_years)
 
 st.sidebar.markdown(f"""
 <div style="background-color: #f0f2f6; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #e63946;">
-    <small style="color: #666;">📉 贷款本金: ${sidebar_loan:,}</small><br>
-    <span style="font-size: 16px; font-weight: bold;">👉 月供: </span>
+    <small style="color: #666;">📉 Loan Principal: ${sidebar_loan:,}</small><br>
+    <span style="font-size: 16px; font-weight: bold;">👉 Monthly Payment: </span>
     <span style="font-size: 20px; font-weight: 900; color: #e63946;">${sidebar_payment:,}</span>
 </div>
 """, unsafe_allow_html=True)
 # ----------------------------------------
 
-st.sidebar.header("2. 你的家底")
-cash_now = st.sidebar.number_input("现有存款 ($)", value=0)
-gic_amount = st.sidebar.number_input("未来大笔收入如定存到期 ($)", value=0)
+st.sidebar.header("2. Assets & Savings")
+cash_now = st.sidebar.number_input("Current Cash/Savings ($)", value=0)
+gic_amount = st.sidebar.number_input("Future Inflows (e.g., GIC) ($)", value=0)
 
-st.sidebar.header("3. 每月收支")
-start_date_input = st.sidebar.date_input("模拟开始日期", datetime.today())
+st.sidebar.header("3. Monthly Budget")
+start_date_input = st.sidebar.date_input("Simulation Start Date", datetime.today())
 start_date = datetime(start_date_input.year, start_date_input.month, 1)
 
-monthly_income = st.sidebar.number_input("当前月纯收入 ($)", value=0)
-income_growth_rate = st.sidebar.number_input("预计年收入增长率 (%)", value=0.0, step=0.5)
-monthly_expense = st.sidebar.number_input("月生活支出 ($)", value=0)
-house_expense = st.sidebar.number_input("房税+房保险 /月 ($)", value=0)
+monthly_income = st.sidebar.number_input("Net Monthly Income ($)", value=0)
+income_growth_rate = st.sidebar.number_input("Est. Income Growth Rate (%)", value=0.0, step=0.5)
+monthly_expense = st.sidebar.number_input("Living Expenses ($)", value=0)
+house_expense = st.sidebar.number_input("Property Tax & Insurance/mo ($)", value=0)
 
-st.sidebar.header("4. 提前还贷决策")
-prepay_amount = st.sidebar.number_input("提前还贷金额 ($)", value=0, step=5000)
+st.sidebar.header("4. Prepayment Strategy")
+prepay_amount = st.sidebar.number_input("Prepayment Amount ($)", value=0, step=5000)
 
 col_y, col_m = st.sidebar.columns(2)
 with col_y:
-    prepay_year = st.selectbox("还贷年份", range(start_date.year, start_date.year + 31), index=0)
+    prepay_year = st.selectbox("Year", range(start_date.year, start_date.year + 31), index=0)
 with col_m:
-    prepay_month = st.selectbox("还贷月份", range(1, 13), index=start_date.month - 1)
+    prepay_month = st.selectbox("Month", range(1, 13), index=start_date.month - 1)
 
 prepay_date = datetime(prepay_year, prepay_month, 1)
-penalty = st.sidebar.number_input("提前还贷罚金 ($)", value=0)
+penalty = st.sidebar.number_input("Prepayment Penalty ($)", value=0)
 
 
-# --- 逻辑开关：只有输入了房价才开始推演 ---
+# --- Logic Trigger: Only run if House Price > 0 ---
 if house_price > 0:
-    # --- 开始推演 ---
+    # --- Simulation Loop ---
     loan_balance = house_price - down_payment
-    current_cash = cash_now - (house_price * 0.02) # 假设2%杂费
+    current_cash = cash_now - (house_price * 0.02) # Assume 2% closing costs
     initial_payment = calc_cdn_mortgage(loan_balance, rate_annual, amortization_years)
     current_monthly_payment = initial_payment
 
@@ -114,7 +113,7 @@ if house_price > 0:
     for m in range(1, 601):
         this_month_date = add_months(start_date, m-1)
         
-        # 每年更新 (通胀与收入)
+        # Annual Update (Inflation & Income)
         if m > 1 and (m - 1) % 12 == 0:
             active_monthly_expense *= (1 + inflation_rate)
             active_house_expense *= (1 + inflation_rate)
@@ -125,14 +124,14 @@ if house_price > 0:
         special_event_cash = 0
         if m == 6: special_event_cash += gic_amount
         
-        # 提前还贷逻辑
+        # Prepayment Logic
         if this_month_date.year == prepay_date.year and this_month_date.month == prepay_date.month and prepay_amount > 0:
             special_event_cash -= (prepay_amount + penalty)
             loan_balance -= prepay_amount
             if loan_balance < 0: loan_balance = 0
-            prepay_note = f"注：以下为 {this_month_date.strftime('%Y年%m月')} 提前还贷 ${prepay_amount:,} 后的月供变化"
+            prepay_note = f"Note: Payment adjusted after prepayment of ${prepay_amount:,} in {this_month_date.strftime('%Y-%m')}"
         
-        # 5年自动续约重算月供
+        # 5-Year Renewal Logic (Canadian standard)
         if m == 61:
             new_payment = calc_cdn_mortgage(loan_balance, rate_annual, amortization_years - 5)
             if new_payment != current_monthly_payment:
@@ -144,6 +143,7 @@ if house_price > 0:
         elif m == 1:
             phase_start_for_new = start_date
 
+        # Principal & Interest
         if loan_balance > 0:
             monthly_rate = (1 + (rate_annual/100/2))**(2/12) - 1
             interest_charge = loan_balance * monthly_rate
@@ -169,43 +169,44 @@ if house_price > 0:
 
     df = pd.DataFrame(months_data)
 
-    # --- 展示结果 ---
-    st.subheader("🏁 全周期预测结论")
+    # --- Results Display ---
+    st.subheader("🏁 Full Cycle Forecast")
     c1, c2 = st.columns(2)
     with c1:
         if bankruptcy_date:
-            st.error(f"💀 破产日期: {bankruptcy_date.strftime('%Y年%m月')}")
-            st.write(f"预计还能坚持: **{get_duration_str(start_date, bankruptcy_date)}**")
+            st.error(f"💀 Bankruptcy Date: {bankruptcy_date.strftime('%Y-%m')}")
+            st.write(f"Survival Time: **{get_duration_str(start_date, bankruptcy_date)}**")
         else: 
-            st.success("✅ 现金流安全")
+            st.success("✅ Cash Flow Safe")
     with c2:
         if payoff_date: 
-            st.info(f"🏠 结清日期: {payoff_date.strftime('%Y年%m月')}")
+            st.info(f"🏠 Payoff Date: {payoff_date.strftime('%Y-%m')}")
 
     st.markdown("---")
-    st.subheader("📅 房贷月供阶段表")
+    st.subheader("📅 Payment Schedule")
     
     if len(payment_history) > 0:
         if len(payment_history) > 1 and prepay_note:
             p1 = payment_history[0]
-            st.write(f"⏱ **{p1['start'].strftime('%Y年%m月')} - {p1['end'].strftime('%Y年%m月')}** ： 月供金额为 **${p1['amount']:,}**")
+            st.write(f"⏱ **{p1['start'].strftime('%Y-%m')} - {p1['end'].strftime('%Y-%m')}** : Monthly Payment **${p1['amount']:,}**")
             st.caption(prepay_note)
             if len(payment_history) >= 2:
                 p2 = payment_history[1]
-                st.write(f"⏱ **{p2['start'].strftime('%Y年%m月')} - {p2['end'].strftime('%Y年%m月')}** ： 月供金额为 **${p2['amount']:,}**")
+                st.write(f"⏱ **{p2['start'].strftime('%Y-%m')} - {p2['end'].strftime('%Y-%m')}** : Monthly Payment **${p2['amount']:,}**")
         else:
             for phase in payment_history:
-                st.write(f"⏱ **{phase['start'].strftime('%Y年%m月')} - {phase['end'].strftime('%Y年%m月')}** ： 月供金额为 **${phase['amount']:,}**")
+                st.write(f"⏱ **{phase['start'].strftime('%Y-%m')} - {phase['end'].strftime('%Y-%m')}** : Monthly Payment **${phase['amount']:,}**")
     else:
-        st.write(f"⏱ **{start_date.strftime('%Y年%m月')} 开始** ： 当前月供为 **${current_monthly_payment:,}**")
+        st.write(f"⏱ **Starting {start_date.strftime('%Y-%m')}** : Current Payment **${current_monthly_payment:,}**")
 
-    # --- 图表 ---
-    st.markdown("### 📈 财富与债务曲线")
+    # --- Chart ---
+    st.markdown("### 📈 Wealth vs. Debt Curve")
     st.line_chart(df.set_index("Date")[["Cash", "Loan", "ZeroLine"]], color=["#29b5e8", "#ff4b4b", "#000000"])
     
-    st.caption(f"注：模型已自动计入每年 {inflation_rate*100}% 的生活成本通胀。月收入增长上限初始设为 ${initial_income_cap} (基于曼省平均月收入之 150%)，且该封顶值亦随通胀率逐年同步递增。")
+    st.caption(f"Note: Model includes {inflation_rate*100}% annual inflation on living costs. Income growth is capped at an initial ${initial_income_cap} (indexed to inflation).")
 
 else:
-    # --- 欢迎页面 ---
-    st.info("👋 欢迎使用 BrokeDate V1.7！*别只算月供，算算你能活多久* 请在左侧侧边栏输入您的房贷、资产及收支数据，系统将为您生成全周期的生存推演图表。")
-    st.image("https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80", caption="打破买房幻觉，通过揭示“破产日期”来建立真实的安全感")
+    # --- Welcome Screen ---
+    st.info("👋 Welcome to BrokeDate V2! Please enter your mortgage, asset, and budget details in the sidebar to generate your survival forecast.")
+    
+    st.image("https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80", caption="Plan your financial future before it's too late.")
