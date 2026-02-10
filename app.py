@@ -127,9 +127,9 @@ start_date = datetime(datetime.today().year, datetime.today().month, 1)
 monthly_income = synced_input_int("当前家庭月纯收入 ($)", "monthly_income", 0, 20000, 100,
                                    help_text="扣去所有税费，养老等每个月纯到账的收入")
 income_growth_rate = synced_input_float("预计年收入增长率 (%)", "income_growth", 0.0, 15.0, 0.5, "%.1f",
-                                         help_text="建议3-5%的全国平均值，模型会在收入超过5700元（曼省家庭中位线）后停止增长")
+                                         help_text="建议3-5%的全国平均值，收入达到$5,700（曼省家庭税后中位线）后停止按此增长，之后仅按2%通胀率缓慢递增")
 monthly_expense = synced_input_int("月生活支出 ($)", "monthly_expense", 0, 15000, 100,
-                                    help_text="除了房税和房屋保险外的一切支出")
+                                    help_text="不含月供、房税和房屋保险。包括食品、交通、通讯、水电、娱乐等一切日常开销，曼省家庭参考值约$3,000-$3,500")
 house_expense = synced_input_int("房税+房保险 /月 ($)", "house_expense", 0, 3000, 50)
 
 st.sidebar.header("4. 提前还贷决策")
@@ -274,7 +274,7 @@ if house_price > 0:
     st.markdown("### 💰 月收支平衡表")
     df_income_expense = df.melt(id_vars=["Date"], value_vars=["Income", "Expense"],
                                  var_name="类型", value_name="金额")
-    ie_chart = alt.Chart(df_income_expense).mark_line(strokeWidth=2.5).encode(
+    ie_chart = alt.Chart(df_income_expense).mark_line(strokeWidth=2.5, interpolate="monotone").encode(
         x=alt.X("Date:T", title="日期"),
         y=alt.Y("金额:Q", title="月金额 ($)"),
         color=alt.Color("类型:N",
