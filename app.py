@@ -266,37 +266,23 @@ if house_price > 0:
     else:
         st.write(f"⏱ **{start_date.strftime('%Y年%m月')} 开始** ： 当前月供为 **${current_monthly_payment:,}**")
 
-    # --- 图表 (Altair: 实线粗 + 虚线细) ---
+    # --- 图表1：财富与债务曲线 ---
     st.markdown("### 📈 财富与债务曲线")
+    st.line_chart(df.set_index("Date")[["Cash", "Loan", "ZeroLine"]], color=["#29b5e8", "#ff4b4b", "#000000"])
 
-    # 转为长格式
-    df_main = df.melt(id_vars=["Date"], value_vars=["Cash", "Loan", "ZeroLine"],
-                      var_name="指标", value_name="金额")
-    df_sub = df.melt(id_vars=["Date"], value_vars=["Income", "Expense"],
-                     var_name="指标", value_name="金额")
-
-    # 主线：Cash / Loan / ZeroLine — 实线，粗，左侧 Y 轴
-    main_chart = alt.Chart(df_main).mark_line(strokeWidth=3).encode(
+    # --- 图表2：月收支平衡表 ---
+    st.markdown("### 💰 月收支平衡表")
+    df_income_expense = df.melt(id_vars=["Date"], value_vars=["Income", "Expense"],
+                                 var_name="类型", value_name="金额")
+    ie_chart = alt.Chart(df_income_expense).mark_line(strokeWidth=2.5).encode(
         x=alt.X("Date:T", title="日期"),
-        y=alt.Y("金额:Q", title="资产 / 贷款 ($)"),
-        color=alt.Color("指标:N",
-                         scale=alt.Scale(domain=["Cash", "Loan", "ZeroLine"],
-                                         range=["#29b5e8", "#ff4b4b", "#000000"]),
-                         legend=alt.Legend(title="指标")),
-    )
-
-    # 副线：Income / Expense — 虚线，细，右侧独立 Y 轴
-    sub_chart = alt.Chart(df_sub).mark_line(strokeWidth=1.5, strokeDash=[6, 4]).encode(
-        x=alt.X("Date:T"),
-        y=alt.Y("金额:Q", title="月收支 ($)", axis=alt.Axis(orient="right")),
-        color=alt.Color("指标:N",
+        y=alt.Y("金额:Q", title="月金额 ($)"),
+        color=alt.Color("类型:N",
                          scale=alt.Scale(domain=["Income", "Expense"],
                                          range=["#22c55e", "#ef4444"]),
-                         legend=alt.Legend(title="月收支")),
-    )
-
-    chart = (main_chart + sub_chart).properties(height=420).resolve_scale(y="independent", color="independent")
-    st.altair_chart(chart, use_container_width=True)
+                         legend=alt.Legend(title="类型")),
+    ).properties(height=300)
+    st.altair_chart(ie_chart, use_container_width=True)
 
     st.caption(f"注：模型已自动计入每年 {inflation_rate*100}% 的生活成本通胀。月收入增长上限初始设为 ${initial_income_cap} (基于曼省平均月收入之 150%)，且该封顶值亦随通胀率逐年同步递增。")
 
