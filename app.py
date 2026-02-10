@@ -53,29 +53,36 @@ def get_duration_str(start, end):
     diff = end.year * 12 + end.month - (start.year * 12 + start.month)
     return f"{diff // 12} 年 {diff % 12} 个月"
 
-# --- 联动输入组件：number_input + slider 共享同一个 key ---
+# --- 联动回调函数 ---
+def _sync_from_num(k):
+    st.session_state[k] = st.session_state[f"{k}_num"]
+
+def _sync_from_sld(k):
+    st.session_state[k] = st.session_state[f"{k}_sld"]
+
+# --- 联动输入组件：number_input + slider ---
 def synced_input_int(label, key, min_val, max_val, step, help_text=None):
-    """整数型：number_input 在上，slider 在下，共享 session_state key 实现联动"""
     if key not in st.session_state:
         st.session_state[key] = min_val
+    val = st.session_state[key]
     st.sidebar.number_input(label, min_value=min_val, max_value=max_val, step=step,
-                            key=f"{key}_num", value=st.session_state[key], help=help_text,
-                            on_change=lambda: st.session_state.update({key: st.session_state[f"{key}_num"]}))
+                            key=f"{key}_num", value=val, help=help_text,
+                            on_change=_sync_from_num, args=(key,))
     st.sidebar.slider(label, min_value=min_val, max_value=max_val, step=step,
-                      key=f"{key}_sld", value=st.session_state[key], label_visibility="collapsed",
-                      on_change=lambda: st.session_state.update({key: st.session_state[f"{key}_sld"]}))
+                      key=f"{key}_sld", value=val, label_visibility="collapsed",
+                      on_change=_sync_from_sld, args=(key,))
     return st.session_state[key]
 
 def synced_input_float(label, key, min_val, max_val, step, fmt="%.2f", help_text=None):
-    """浮点型：number_input 在上，slider 在下，共享 session_state key 实现联动"""
     if key not in st.session_state:
         st.session_state[key] = min_val
+    val = st.session_state[key]
     st.sidebar.number_input(label, min_value=min_val, max_value=max_val, step=step, format=fmt,
-                            key=f"{key}_num", value=st.session_state[key], help=help_text,
-                            on_change=lambda: st.session_state.update({key: st.session_state[f"{key}_num"]}))
+                            key=f"{key}_num", value=val, help=help_text,
+                            on_change=_sync_from_num, args=(key,))
     st.sidebar.slider(label, min_value=min_val, max_value=max_val, step=step,
-                      key=f"{key}_sld", value=st.session_state[key], label_visibility="collapsed",
-                      on_change=lambda: st.session_state.update({key: st.session_state[f"{key}_sld"]}))
+                      key=f"{key}_sld", value=val, label_visibility="collapsed",
+                      on_change=_sync_from_sld, args=(key,))
     return st.session_state[key]
 
 # --- 侧边栏：输入参数 ---
