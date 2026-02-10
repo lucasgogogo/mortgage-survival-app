@@ -15,8 +15,8 @@ rate_annual = st.sidebar.number_input("年利率 (%)", value=0.00, step=0.1, for
 amortization_years = st.sidebar.selectbox("贷款总年限", [25, 30], index=0)
 
 st.sidebar.header("2. 你的家底")
-cash_now = st.sidebar.number_input("现有活钱 ($)", value=0)
-gic_amount = st.sidebar.number_input("定存回笼 ($)", value=0)
+cash_now = st.sidebar.number_input("可用存款 ($)", value=0)
+gic_amount = st.sidebar.number_input("未来收入/如定期取回 ($)", value=0)
 
 st.sidebar.header("3. 每月收支")
 start_date_input = st.sidebar.date_input("模拟开始日期", datetime.today())
