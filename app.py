@@ -9,11 +9,14 @@ st.title("🏠 房贷生存全周期测试模型 (V1.8)")
 st.markdown("**别只算月供，算算你能活多久**")
 st.caption('核心精神：打破买房幻觉，通过揭示"破产日期"来建立真实的安全感。')
 
-# --- 隐藏 number_input 的加减按钮 ---
+# --- 隐藏 number_input 的加减按钮（保留 help 问号） ---
 st.markdown("""
 <style>
-    button.step-up, button.step-down,
-    [data-testid="stNumberInput"] button {
+    [data-testid="stNumberInput-StepUp"],
+    [data-testid="stNumberInput-StepDown"],
+    [data-testid="stNumberInput"] [data-testid="stBaseButton-stepUp"],
+    [data-testid="stNumberInput"] [data-testid="stBaseButton-stepDown"],
+    button.step-up, button.step-down {
         display: none !important;
     }
     [data-testid="stNumberInput"] div[data-baseweb="input"] {
